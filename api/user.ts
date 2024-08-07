@@ -1,19 +1,24 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-
-const baseUrl = "http://localhost:1234/api/v1";
+import * as Keychain from "react-native-keychain";
+// const baseUrl = "http://localhost:1234/api/v1";
+const baseUrl =
+    "https://a5fb-2409-40d1-1029-72d9-8b5c-11a1-fd5e-c70a.ngrok-free.app/api/v1";
 
 export const userApi = createApi({
     reducerPath: "userApi",
     baseQuery: fetchBaseQuery({
         baseUrl,
         credentials: "include",
-        prepareHeaders(headers: Headers) {
-            const accessToken = localStorage.getItem("accessToken");
-            const refreshToken = localStorage.getItem("refreshToken");
-
-            if (accessToken && refreshToken) {
-                headers.set("accessToken", accessToken);
-                headers.set("refreshToken", refreshToken);
+        async prepareHeaders(headers: Headers) {
+            try {
+                const credentials: any = await Keychain.getGenericPassword();
+                if (credentials) {
+                    console.log(credentials);
+                    headers.set("accessToken", credentials.accessToken);
+                    headers.set("refreshToken", credentials.refreshToken);
+                }
+            } catch (error: any) {
+                console.log(error.message);
             }
         },
     }),
@@ -32,11 +37,13 @@ export const userApi = createApi({
                 body: { ...Credentials },
             }),
         }),
-        
+        currentUser: builder.query({
+            query: () => ({
+                url: "/user/currentUser",
+                method: "GET",
+            }),
+        }),
     }),
 });
 
-export const {
-    useLoginMutation,
-    useSignupMutation
-} = userApi;
+export const { useLoginMutation, useSignupMutation, useCurrentUserQuery } = userApi;
